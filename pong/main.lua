@@ -27,6 +27,9 @@ local BALL_SIZE = 4
     This function is called exactly once at the beginning of the game.
 ]]
 function love.load(arg, unfilteredArg)
+    -- Initializes pseudo-random generator
+    math.randomseed(os.time())
+
     -- Sets the default scaling filters used with Images, Canvases, and Fonts.
     love.graphics.setDefaultFilter('nearest', 'nearest')
     
@@ -34,15 +37,27 @@ function love.load(arg, unfilteredArg)
     smallFont = love.graphics.newFont('font.ttf', 8)
     scoreFont = love.graphics.newFont('font.ttf', 32)
 
-    -- Setup game screen
+    -- Setup the game screen
     push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         fullscreen = false, -- turns fullscreen mode on or off
         resizable = false   -- allows resizing the window
     })
 
+    -- Initializes game state
+    gameState = 'start'
+
+    -- Initializes players' score
     player1Score = 0
     player2Score = 0
 
+    -- Initializes the ball
+    ballX = GAME_WIDTH / 2 - BALL_SIZE / 2
+    ballY = GAME_HEIGHT / 2 - BALL_SIZE / 2
+
+    ballDX = (math.random(2) == 1 and 1 or -1) * math.random(50, 200)
+    ballDY = math.random(-1, 1) * math.random(50, 200)
+
+    -- Initializes players' paddle
     player1PaddleY = GAME_TOP_MARGIN
     player2PaddleY = GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH
 end
@@ -51,18 +66,24 @@ end
     Callback function used to update the state of the game every frame.
 ]]
 function love.update(dt)
-    -- Player 1 movement
-    if love.keyboard.isDown('w') then
-        player1PaddleY = player1PaddleY - PADDLE_SPEED * dt
-    elseif love.keyboard.isDown('s') then
-        player1PaddleY = player1PaddleY + PADDLE_SPEED * dt
+    -- Ball movement
+    if gameState == 'play' then
+        ballX = ballX + ballDX * dt
+        ballY = ballY + ballDY * dt
     end
 
-    -- Player 2 movement
+    -- Player 1 paddle movement (left side)
+    if love.keyboard.isDown('w') then
+        player1PaddleY = math.max(GAME_TOP_MARGIN, player1PaddleY - PADDLE_SPEED * dt)
+    elseif love.keyboard.isDown('s') then
+        player1PaddleY = math.min(GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH, player1PaddleY + PADDLE_SPEED * dt)
+    end
+
+    -- Player 2 paddle movement (right side)
     if love.keyboard.isDown('up') then
-        player2PaddleY = player2PaddleY - PADDLE_SPEED * dt
+        player2PaddleY = math.max(GAME_TOP_MARGIN, player2PaddleY - PADDLE_SPEED * dt)
     elseif love.keyboard.isDown('down') then
-        player2PaddleY = player2PaddleY + PADDLE_SPEED * dt
+        player2PaddleY = math.min(GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH, player2PaddleY + PADDLE_SPEED * dt)
     end
 end
 
@@ -77,20 +98,25 @@ function love.draw()
 
     -- Draws welcome text at the top of the game screen.
     love.graphics.setFont(smallFont)
-    love.graphics.printf('Hello Pong!', 0, 10, GAME_WIDTH, 'center')
+    if gameState == 'start' then
+        love.graphics.printf('Hello Start State!', 0, 10, GAME_WIDTH, 'center')
+    else
+        love.graphics.printf('Hello Play State!', 0, 10, GAME_WIDTH, 'center')
+    end
 
+    -- Draws players' score
     love.graphics.setFont(scoreFont)
     love.graphics.print(player1Score, GAME_WIDTH / 2 - 50, GAME_HEIGHT / 3)
     love.graphics.print(player2Score, GAME_WIDTH / 2 + 30, GAME_HEIGHT / 3)
 
-    -- Draw Player 1 paddle (left side)
+    -- Draws the ball
+    love.graphics.rectangle('fill', ballX, ballY, BALL_SIZE, BALL_SIZE)
+
+    -- Draws Player 1 paddle (left side)
     love.graphics.rectangle('fill', GAME_LEFT_MARGIN, player1PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
 
-    -- Draw Player 2 paddle (right side)
+    -- Draws Player 2 paddle (right side)
     love.graphics.rectangle('fill', GAME_WIDTH - GAME_RIGHT_MARGIN - PADDLE_HEIGHT, player2PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
-
-    -- Draw the ball
-    love.graphics.rectangle('fill', GAME_WIDTH / 2 - BALL_SIZE / 2, GAME_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE)
 
     push:finish()
 end
@@ -101,5 +127,19 @@ end
 function love.keypressed(key, scancode, isrepeat)
     if key == 'escape' then
         love.event.quit()   -- Exits the LÖVE program.
+    end
+    if key == 'enter' or key == 'return' then
+        if gameState == 'start' then
+            gameState = 'play'
+        else
+            gameState = 'start'
+
+            -- Initialize the ball
+            ballX = GAME_WIDTH / 2 - BALL_SIZE / 2
+            ballY = GAME_HEIGHT / 2 - BALL_SIZE / 2
+
+            ballDX = (math.random(2) == 1 and 1 or -1) * math.random(50, 200)
+            ballDY = math.random(-1, 1) * math.random(50, 200)
+        end
     end
 end
