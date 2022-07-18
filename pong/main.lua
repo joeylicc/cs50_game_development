@@ -11,17 +11,19 @@
 ]]
 local push = require "push"
 
-local GAME_WIDTH, GAME_HEIGHT = 432, 243
+require "ball"
+require "paddle"
 
-local GAME_TOP_MARGIN, GAME_RIGHT_MARGIN, GAME_BOTTOM_MARGIN, GAME_LEFT_MARGIN = 20, 10, 20, 10
+GAME_WIDTH, GAME_HEIGHT = 432, 243
+GAME_TOP_MARGIN, GAME_RIGHT_MARGIN, GAME_BOTTOM_MARGIN, GAME_LEFT_MARGIN = 20, 10, 20, 10
 
 -- Gets the width and height of the desktop.
 local WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions()
 
-local PADDLE_WIDTH, PADDLE_HEIGHT = 20, 5
-local PADDLE_SPEED = 200
-
 local BALL_SIZE = 4
+
+local PADDLE_WIDTH, PADDLE_HEIGHT = 5, 20
+local PADDLE_SPEED = 200
 
 --[[
     This function is called exactly once at the beginning of the game.
@@ -51,15 +53,11 @@ function love.load(arg, unfilteredArg)
     player2Score = 0
 
     -- Initializes the ball
-    ballX = GAME_WIDTH / 2 - BALL_SIZE / 2
-    ballY = GAME_HEIGHT / 2 - BALL_SIZE / 2
+    ball = Ball(GAME_WIDTH / 2 - BALL_SIZE / 2, GAME_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE)
 
-    ballDX = (math.random(2) == 1 and 1 or -1) * math.random(50, 200)
-    ballDY = math.random(-1, 1) * math.random(50, 200)
-
-    -- Initializes players' paddle
-    player1PaddleY = GAME_TOP_MARGIN
-    player2PaddleY = GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH
+    -- Initializes paddles
+    player1Paddle = Paddle(GAME_LEFT_MARGIN, GAME_TOP_MARGIN, PADDLE_WIDTH, PADDLE_HEIGHT)
+    player2Paddle = Paddle(GAME_WIDTH - GAME_RIGHT_MARGIN - PADDLE_WIDTH, GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT)
 end
 
 --[[
@@ -68,23 +66,26 @@ end
 function love.update(dt)
     -- Ball movement
     if gameState == 'play' then
-        ballX = ballX + ballDX * dt
-        ballY = ballY + ballDY * dt
+        ball:update(dt)
     end
 
     -- Player 1 paddle movement (left side)
+    player1Paddle.dy = 0
     if love.keyboard.isDown('w') then
-        player1PaddleY = math.max(GAME_TOP_MARGIN, player1PaddleY - PADDLE_SPEED * dt)
+        player1Paddle.dy = -PADDLE_SPEED
     elseif love.keyboard.isDown('s') then
-        player1PaddleY = math.min(GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH, player1PaddleY + PADDLE_SPEED * dt)
+        player1Paddle.dy = PADDLE_SPEED
     end
+    player1Paddle:update(dt)
 
     -- Player 2 paddle movement (right side)
+    player2Paddle.dy = 0
     if love.keyboard.isDown('up') then
-        player2PaddleY = math.max(GAME_TOP_MARGIN, player2PaddleY - PADDLE_SPEED * dt)
+        player2Paddle.dy = -PADDLE_SPEED
     elseif love.keyboard.isDown('down') then
-        player2PaddleY = math.min(GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH, player2PaddleY + PADDLE_SPEED * dt)
+        player2Paddle.dy = PADDLE_SPEED
     end
+    player2Paddle:update(dt)
 end
 
 --[[
@@ -110,13 +111,11 @@ function love.draw()
     love.graphics.print(player2Score, GAME_WIDTH / 2 + 30, GAME_HEIGHT / 3)
 
     -- Draws the ball
-    love.graphics.rectangle('fill', ballX, ballY, BALL_SIZE, BALL_SIZE)
+    ball:draw()
 
-    -- Draws Player 1 paddle (left side)
-    love.graphics.rectangle('fill', GAME_LEFT_MARGIN, player1PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
-
-    -- Draws Player 2 paddle (right side)
-    love.graphics.rectangle('fill', GAME_WIDTH - GAME_RIGHT_MARGIN - PADDLE_HEIGHT, player2PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
+    -- Draws paddles
+    player1Paddle:draw()
+    player2Paddle:draw()
 
     push:finish()
 end
@@ -134,12 +133,7 @@ function love.keypressed(key, scancode, isrepeat)
         else
             gameState = 'start'
 
-            -- Initialize the ball
-            ballX = GAME_WIDTH / 2 - BALL_SIZE / 2
-            ballY = GAME_HEIGHT / 2 - BALL_SIZE / 2
-
-            ballDX = (math.random(2) == 1 and 1 or -1) * math.random(50, 200)
-            ballDY = math.random(-1, 1) * math.random(50, 200)
+            ball:reset()
         end
     end
 end
