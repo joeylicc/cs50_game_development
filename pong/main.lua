@@ -19,6 +19,7 @@ local GAME_TOP_MARGIN, GAME_RIGHT_MARGIN, GAME_BOTTOM_MARGIN, GAME_LEFT_MARGIN =
 local WINDOW_WIDTH, WINDOW_HEIGHT = love.window.getDesktopDimensions()
 
 local PADDLE_WIDTH, PADDLE_HEIGHT = 20, 5
+local PADDLE_SPEED = 200
 
 local BALL_SIZE = 4
 
@@ -31,15 +32,38 @@ function love.load(arg, unfilteredArg)
     
     -- Creates a new Font from a TrueType Font or BMFont file.
     smallFont = love.graphics.newFont('font.ttf', 8)
-
-    -- Set an already-loaded Font as the current font.
-    love.graphics.setFont(smallFont)
+    scoreFont = love.graphics.newFont('font.ttf', 32)
 
     -- Setup game screen
     push:setupScreen(GAME_WIDTH, GAME_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         fullscreen = false, -- turns fullscreen mode on or off
         resizable = false   -- allows resizing the window
     })
+
+    player1Score = 0
+    player2Score = 0
+
+    player1PaddleY = GAME_TOP_MARGIN
+    player2PaddleY = GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH
+end
+
+--[[
+    Callback function used to update the state of the game every frame.
+]]
+function love.update(dt)
+    -- Player 1 movement
+    if love.keyboard.isDown('w') then
+        player1PaddleY = player1PaddleY - PADDLE_SPEED * dt
+    elseif love.keyboard.isDown('s') then
+        player1PaddleY = player1PaddleY + PADDLE_SPEED * dt
+    end
+
+    -- Player 2 movement
+    if love.keyboard.isDown('up') then
+        player2PaddleY = player2PaddleY - PADDLE_SPEED * dt
+    elseif love.keyboard.isDown('down') then
+        player2PaddleY = player2PaddleY + PADDLE_SPEED * dt
+    end
 end
 
 --[[
@@ -52,18 +76,18 @@ function love.draw()
     love.graphics.clear(45/255, 45/255, 52/255, 255/255)
 
     -- Draws welcome text at the top of the game screen.
-    love.graphics.printf('Hello Pong!', -- A text string.
-        0,                  -- The position on the x-axis. (0 since we're going to center it based on width)
-        10,                  -- The position on the y-axis. (halfway down the window)
-        GAME_WIDTH,         -- Wrap the line after this many horizontal pixels. (the entire window width here)
-        'center'            -- The alignment, can be 'center', 'left', or 'right'
-    )
+    love.graphics.setFont(smallFont)
+    love.graphics.printf('Hello Pong!', 0, 10, GAME_WIDTH, 'center')
+
+    love.graphics.setFont(scoreFont)
+    love.graphics.print(player1Score, GAME_WIDTH / 2 - 50, GAME_HEIGHT / 3)
+    love.graphics.print(player2Score, GAME_WIDTH / 2 + 30, GAME_HEIGHT / 3)
 
     -- Draw Player 1 paddle (left side)
-    love.graphics.rectangle('fill', GAME_LEFT_MARGIN, GAME_TOP_MARGIN, PADDLE_HEIGHT, PADDLE_WIDTH)
+    love.graphics.rectangle('fill', GAME_LEFT_MARGIN, player1PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
 
     -- Draw Player 2 paddle (right side)
-    love.graphics.rectangle('fill', GAME_WIDTH - GAME_RIGHT_MARGIN - PADDLE_HEIGHT, GAME_HEIGHT - GAME_BOTTOM_MARGIN - PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_WIDTH)
+    love.graphics.rectangle('fill', GAME_WIDTH - GAME_RIGHT_MARGIN - PADDLE_HEIGHT, player2PaddleY, PADDLE_HEIGHT, PADDLE_WIDTH)
 
     -- Draw the ball
     love.graphics.rectangle('fill', GAME_WIDTH / 2 - BALL_SIZE / 2, GAME_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE)
